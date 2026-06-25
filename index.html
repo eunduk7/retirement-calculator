@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>은퇴 자금 계산기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #888780;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --green: #1D9E75;
+    --green-bg: #E1F5EE;
+    --green-text: #085041;
+    --amber: #BA7517;
+    --amber-bg: #FAEEDA;
+    --amber-text: #633806;
+    --red: #E24B4A;
+    --red-bg: #FCEBEB;
+    --red-text: #501313;
+    --blue-bg: #E6F1FB;
+    --blue-text: #185FA5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #2c2c2a;
+      --surface2: #232321;
+      --border: rgba(255,255,255,0.1);
+      --border2: rgba(255,255,255,0.2);
+      --text: #f0ede8;
+      --text2: #b4b2a9;
+      --text3: #888780;
+      --green-bg: #04342C;
+      --green-text: #9FE1CB;
+      --amber-bg: #412402;
+      --amber-text: #FAC775;
+      --red-bg: #501313;
+      --red-text: #F7C1C1;
+      --blue-bg: #042C53;
+      --blue-text: #B5D4F4;
+    }
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: var(--text3);
+    margin-bottom: 28px;
+  }
+  .section {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+  .sec-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .row:last-child { margin-bottom: 0; }
+  .row label {
+    font-size: 13px;
+    color: var(--text2);
+    min-width: 160px;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+  .row label small {
+    display: block;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  input[type=range] {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--text);
+    cursor: pointer;
+  }
+  .val {
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 96px;
+    text-align: right;
+    color: var(--text);
+  }
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: var(--radius-md);
+    margin-left: 4px;
+  }
+  .badge-fra   { background: var(--blue-bg);  color: var(--blue-text); }
+  .badge-early { background: var(--amber-bg); color: var(--amber-text); }
+  .badge-late  { background: var(--green-bg); color: var(--green-text); }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .card {
+    background: var(--surface2);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+  }
+  .card-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .card-val   { font-size: 20px; font-weight: 500; color: var(--text); }
+  .card-val.ok   { color: var(--green); }
+  .card-val.warn { color: var(--amber); }
+  .card-val.bad  { color: var(--red);   }
+  .info-row {
+    background: var(--surface2);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .info-item-label { font-size: 11px; color: var(--text3); }
+  .info-item-val   { font-size: 14px; font-weight: 500; color: var(--text); }
+  .info-item-note  { font-size: 11px; color: var(--text3); }
+  .vr { width: 0.5px; background: var(--border); align-self: stretch; }
+  .tip {
+    font-size: 12px;
+    color: var(--text2);
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-md);
+    border-left: 2px solid var(--border2);
+    margin-bottom: 20px;
+  }
+  .tab-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .tab {
+    font-size: 13px;
+    padding: 6px 16px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    cursor: pointer;
+  }
+  .tab.active {
+    background: var(--surface2);
+    color: var(--text);
+    font-weight: 500;
+  }
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    margin-bottom: 20px;
+  }
+  .report-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .report-btn:hover { background: var(--surface2); }
+  .email-panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    margin-top: 12px;
+    display: none;
+  }
+  .email-row { display: flex; gap: 8px; margin-top: 10px; }
+  .email-row input[type=email] {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md);
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+  }
+  .email-row input[type=email]:focus { border-color: var(--text3); }
+  .send-btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .send-btn:hover { background: var(--surface2); }
+  #email-status { font-size: 12px; margin-top: 8px; color: var(--text3); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>은퇴 자금 계산기</h1>
+  <p class="subtitle">미국 거주자 기준 · Social Security 반영 · 부부 합산</p>
+
+  <!-- 기본 정보 -->
+  <div class="section">
+    <div class="sec-title">기본 정보 — 본인</div>
+    <div class="row"><label>현재 나이</label><input type="range" id="age" min="20" max="65" value="35" step="1"><span class="val"><span id="age-v">35</span> yrs</span></div>
+    <div class="row"><label>은퇴 예정 나이</label><input type="range" id="retire" min="45" max="75" value="65" step="1"><span class="val"><span id="retire-v">65</span> yrs</span></div>
+    <div class="row"><label>소셜연금 신청 나이</label><input type="range" id="ssage" min="62" max="70" value="67" step="1"><span class="val"><span id="ssage-v">67</span> yrs <span id="ssage-badge" class="badge badge-fra">FRA</span></span></div>
+    <div class="row"><label>기대 수명</label><input type="range" id="life" min="70" max="100" value="90" step="1"><span class="val"><span id="life-v">90</span> yrs</span></div>
+  </div>
+
+  <!-- 배우자 정보 -->
+  <div class="section">
+    <div class="sec-title">배우자 정보</div>
+    <div class="row"><label>현재 나이</label><input type="range" id="sp-age" min="20" max="65" value="33" step="1"><span class="val"><span id="sp-age-v">33</span> yrs</span></div>
+    <div class="row"><label>소셜연금 신청 나이</label><input type="range" id="sp-ssage" min="62" max="70" value="67" step="1"><span class="val"><span id="sp-ssage-v">67</span> yrs <span id="sp-ssage-badge" class="badge badge-fra">FRA</span></span></div>
+    <div class="row"><label>기대 수명</label><input type="range" id="sp-life" min="70" max="100" value="92" step="1"><span class="val"><span id="sp-life-v">92</span> yrs</span></div>
+  </div>
+
+  <!-- 재정 정보 -->
+  <div class="section">
+    <div class="sec-title">재정 정보</div>
+    <div class="row"><label>월 생활비 (은퇴 후)</label><input type="range" id="expense" min="500" max="15000" value="5000" step="100"><span class="val">$<span id="expense-v">5,000</span></span></div>
+    <div class="row"><label>현재 저축/투자액</label><input type="range" id="saved" min="0" max="2000000" value="100000" step="5000"><span class="val" id="saved-disp">$100,000</span></div>
+    <div class="row"><label>월 저축 가능액</label><input type="range" id="monthly" min="100" max="10000" value="1500" step="100"><span class="val">$<span id="monthly-v">1,500</span></span></div>
+    <div class="divider"></div>
+    <div class="row"><label>본인 소셜연금<small>FRA 기준 월 금액</small></label><input type="range" id="ss" min="0" max="5000" value="1500" step="50"><span class="val">$<span id="ss-v">1,500</span>/mo</span></div>
+    <div class="row"><label>배우자 소셜연금<small>FRA 기준 월 금액</small></label><input type="range" id="sp-ss" min="0" max="5000" value="1200" step="50"><span class="val">$<span id="sp-ss-v">1,200</span>/mo</span></div>
+  </div>
+
+  <!-- 수익률 -->
+  <div class="section">
+    <div class="sec-title">수익률 / 물가 가정</div>
+    <div class="row"><label>연 투자 수익률</label><input type="range" id="rate" min="1" max="15" value="7" step="0.5"><span class="val"><span id="rate-v">7.0</span>%</span></div>
+    <div class="row"><label>연 물가 상승률 (CPI)</label><input type="range" id="infl" min="0" max="8" value="3" step="0.5"><span class="val"><span id="infl-v">3.0</span>%</span></div>
+  </div>
+
+  <!-- 결과 카드 -->
+  <div class="cards">
+    <div class="card"><div class="card-label">필요 은퇴자금</div><div class="card-val" id="need-total">-</div></div>
+    <div class="card"><div class="card-label">예상 적립액</div><div class="card-val" id="will-have">-</div></div>
+    <div class="card"><div class="card-label">자금 갭</div><div class="card-val" id="gap">-</div></div>
+    <div class="card"><div class="card-label">추가 필요 월 저축</div><div class="card-val" id="extra">-</div></div>
+  </div>
+
+  <!-- SS 요약 -->
+  <div class="info-row">
+    <div class="info-item">
+      <span class="info-item-label">본인 소셜연금 실수령</span>
+      <span class="info-item-val" id="ss-adjusted">-</span>
+      <span class="info-item-note" id="ss-note"></span>
+    </div>
+    <div class="vr"></div>
+    <div class="info-item">
+      <span class="info-item-label">배우자 소셜연금 실수령</span>
+      <span class="info-item-val" id="sp-ss-adjusted">-</span>
+      <span class="info-item-note" id="sp-ss-note"></span>
+    </div>
+    <div class="vr"></div>
+    <div class="info-item">
+      <span class="info-item-label">은퇴 기간 (부부 합산)</span>
+      <span class="info-item-val" id="retire-span">-</span>
+      <span class="info-item-note" id="retire-span-note"></span>
+    </div>
+  </div>
+
+  <div id="tip-box" class="tip"></div>
+
+  <!-- 차트 -->
+  <div class="tab-row">
+    <button class="tab active" onclick="showTab('accumulation',this)">적립 추이</button>
+    <button class="tab" onclick="showTab('withdrawal',this)">인출 시뮬레이션</button>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="mainChart" role="img" aria-label="Retirement savings chart"></canvas>
+  </div>
+
+  <!-- 이메일 리포트 -->
+  <button class="report-btn" onclick="toggleEmailPanel()">
+    <i class="ti ti-mail" aria-hidden="true"></i>
+    리포트 이메일로 받기
+  </button>
+  <div class="email-panel" id="email-panel">
+    <div class="sec-title" style="margin-bottom:6px">이메일 주소를 입력하세요</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">현재 계산 결과를 HTML 리포트로 발송합니다.</div>
+    <div class="email-row">
+      <input type="email" id="email-input" placeholder="example@email.com">
+      <button class="send-btn" onclick="sendReport()">보내기</button>
+    </div>
+    <div id="email-status"></div>
+  </div>
+</div>
+
+<script>
+let chartInst = null;
+let currentTab = 'accumulation';
+const FRA = 67;
+let lastResult = {};
+
+function fmtUSD(n) {
+  const abs = Math.abs(n);
+  if (abs >= 1000000) return '$' + (n / 1000000).toFixed(2) + 'M';
+  if (abs >= 1000) return '$' + Math.round(n / 1000) + 'K';
+  return '$' + Math.round(n).toLocaleString();
+}
+function fmtAxis(v) {
+  if (Math.abs(v) >= 1000000) return '$' + (v / 1000000).toFixed(1) + 'M';
+  if (Math.abs(v) >= 1000) return '$' + (v / 1000).toFixed(0) + 'K';
+  return '$' + v;
+}
+function ssAdj(a) {
+  const d = (a - FRA) * 12;
+  if (d === 0) return 1;
+  if (d > 0) return 1 + d * 0.08 / 12;
+  const e = Math.abs(d);
+  return 1 - (Math.min(e, 36) * 5 / 9 / 100) - (Math.max(e - 36, 0) * 5 / 12 / 100);
+}
+function updateBadge(id, a) {
+  const el = document.getElementById(id);
+  el.className = 'badge';
+  if (a < FRA)      { el.textContent = 'Early';   el.classList.add('badge-early'); }
+  else if (a === FRA){ el.textContent = 'FRA';     el.classList.add('badge-fra'); }
+  else               { el.textContent = 'Delayed'; el.classList.add('badge-late'); }
+}
+
+function calc() {
+  const age     = +document.getElementById('age').value;
+  const retire  = +document.getElementById('retire').value;
+  const ssage   = +document.getElementById('ssage').value;
+  const life    = +document.getElementById('life').value;
+  const spAge   = +document.getElementById('sp-age').value;
+  const spSsage = +document.getElementById('sp-ssage').value;
+  const spLife  = +document.getElementById('sp-life').value;
+  const expense = +document.getElementById('expense').value;
+  const saved   = +document.getElementById('saved').value;
+  const monthly = +document.getElementById('monthly').value;
+  const ssBase  = +document.getElementById('ss').value;
+  const spSsBase= +document.getElementById('sp-ss').value;
+  const rate    = +document.getElementById('rate').value / 100;
+  const infl    = +document.getElementById('infl').value / 100;
+
+  const workYears = Math.max(retire - age, 1);
+  const mRate = rate / 12;
+  const n = workYears * 12;
+  const realRate = (1 + rate) / (1 + infl) - 1;
+  const ssMonthly   = ssBase   * ssAdj(ssage);
+  const spSsMonthly = spSsBase * ssAdj(spSsage);
+  const spRetireAge  = retire + (spAge - age);
+  const spLifeFromRetire = spLife - spRetireAge;
+  const retireYears = Math.max(Math.max(life - retire, 1), Math.max(spLifeFromRetire, 1));
+  const ownSsStart  = Math.max(ssage - retire, 0);
+  const spSsStart   = Math.max(spSsage - spRetireAge, 0);
+  const spSsEnd     = Math.max(spLifeFromRetire, 0);
+  const ownSsEnd    = Math.max(life - retire, 0);
+  const annualExpFV = expense * 12 * Math.pow(1 + infl, workYears);
+  const ssAtR       = ssMonthly   * Math.pow(1 + infl, workYears);
+  const spSsAtR     = spSsMonthly * Math.pow(1 + infl, workYears);
+
+  let needFV = 0;
+  for (let y = 0; y < retireYears; y++) {
+    const ownSS = (y >= ownSsStart && y < ownSsEnd) ? ssAtR   * Math.pow(1 + infl, y) : 0;
+    const spSS  = (y >= spSsStart  && y < spSsEnd)  ? spSsAtR * Math.pow(1 + infl, y) : 0;
+    const exp   = annualExpFV * Math.pow(1 + infl, y);
+    const net   = Math.max(exp - ownSS * 12 - spSS * 12, 0);
+    needFV += net / Math.pow(1 + realRate, y + 1) * (1 + realRate);
+  }
+
+  const willHave = saved * Math.pow(1 + mRate, n) + monthly * (Math.pow(1 + mRate, n) - 1) / mRate;
+  const gap = willHave - needFV;
+  let extra = 0;
+  if (gap < 0) extra = Math.abs(gap) * mRate / (Math.pow(1 + mRate, n) - 1);
+
+  document.getElementById('need-total').textContent = fmtUSD(needFV);
+  document.getElementById('will-have').textContent  = fmtUSD(willHave);
+
+  const gapEl = document.getElementById('gap');
+  gapEl.textContent = (gap >= 0 ? '+' : '-') + fmtUSD(Math.abs(gap));
+  gapEl.className   = 'card-val ' + (gap >= 0 ? 'ok' : 'bad');
+
+  const extraEl = document.getElementById('extra');
+  if (extra > 0) { extraEl.textContent = '$' + Math.ceil(extra / 50) * 50 + '/mo'; extraEl.className = 'card-val warn'; }
+  else           { extraEl.textContent = 'On track'; extraEl.className = 'card-val ok'; }
+
+  const ownPct = (ssAdj(ssage) - 1) * 100;
+  const spPct  = (ssAdj(spSsage) - 1) * 100;
+  document.getElementById('ss-adjusted').textContent    = '$' + Math.round(ssMonthly).toLocaleString() + '/mo';
+  document.getElementById('ss-note').textContent        = (ownPct >= 0 ? '+' : '') + ownPct.toFixed(1) + '% vs FRA (신청 나이 ' + ssage + ')';
+  document.getElementById('sp-ss-adjusted').textContent = '$' + Math.round(spSsMonthly).toLocaleString() + '/mo';
+  document.getElementById('sp-ss-note').textContent     = (spPct >= 0 ? '+' : '') + spPct.toFixed(1) + '% vs FRA (신청 나이 ' + spSsage + ')';
+  document.getElementById('retire-span').textContent    = retireYears + '년';
+  document.getElementById('retire-span-note').textContent = '본인 ' + life + '세 / 배우자 ' + spLife + '세';
+
+  const tip = document.getElementById('tip-box');
+  if (gap >= 0) {
+    tip.textContent = `You're on track — projected savings exceed the target by ${fmtUSD(gap)}. Combined SS income: $${Math.round(ssMonthly + spSsMonthly).toLocaleString()}/mo (claim ages ${ssage}/${spSsage}).`;
+  } else {
+    tip.textContent = `To meet your goal, save an additional $${Math.ceil(extra / 50) * 50}/mo. Delaying both SS claims to 70 would add $${Math.round((ssBase * ssAdj(70) - ssMonthly) + (spSsBase * ssAdj(70) - spSsMonthly)).toLocaleString()}/mo in combined benefits.`;
+  }
+
+  lastResult = { age, retire, ssage, life, spAge, spSsage, spLife, expense, saved, monthly, ssBase, spSsBase, rate: rate * 100, infl: infl * 100, ssMonthly, spSsMonthly, ownPct, spPct, needFV, willHave, gap, extra, retireYears, workYears };
+
+  if (currentTab === 'accumulation') {
+    drawAccumulation(age, retire, saved, monthly, mRate, n, workYears);
+  } else {
+    drawWithdrawal(retire, retireYears, ssage, spSsage, spRetireAge, willHave, expense, ssMonthly, spSsMonthly, ownSsEnd, spSsEnd, rate, infl, workYears);
+  }
+}
+
+function drawAccumulation(age, retire, saved, monthly, mRate, n, workYears) {
+  const labels = [], d1 = [], d2 = [];
+  const steps = Math.min(workYears, 30), sz = workYears / steps;
+  for (let i = 0; i <= steps; i++) {
+    const yr = i * sz, k = Math.round(yr * 12);
+    labels.push('Age ' + Math.round(age + yr));
+    d1.push(Math.round(saved * Math.pow(1 + mRate, k)));
+    d2.push(Math.round(monthly * (Math.pow(1 + mRate, k) - 1) / mRate));
+  }
+  renderChart('bar', labels, [
+    { label: 'Existing savings (grown)', data: d1, backgroundColor: '#B5D4F4', stack: 'a' },
+    { label: 'New contributions',        data: d2, backgroundColor: '#378ADD', stack: 'a' }
+  ]);
+}
+
+function drawWithdrawal(retire, retireYears, ownSsAge, spSsAge, spRetireAge, willHave, expense, ssMonthly, spSsMonthly, ownSsEnd, spSsEnd, rate, infl, workYears) {
+  const labels = [], data = [];
+  let bal = willHave, mRate = rate / 12, mInfl = infl / 12;
+  let mExp = expense * Math.pow(1 + infl, workYears);
+  let mSS  = ssMonthly   * Math.pow(1 + infl, workYears);
+  let mSpSS= spSsMonthly * Math.pow(1 + infl, workYears);
+  for (let y = 0; y <= retireYears; y++) {
+    labels.push('Age ' + (retire + y));
+    data.push(Math.round(bal));
+    if (y < retireYears) {
+      const hasSS   = y >= Math.max(ownSsAge - retire, 0) && y < ownSsEnd;
+      const hasSpSS = y >= Math.max(spSsAge - spRetireAge, 0) && y < spSsEnd;
+      for (let m = 0; m < 12; m++) {
+        const inc = (hasSS ? mSS : 0) + (hasSpSS ? mSpSS : 0);
+        bal = bal * (1 + mRate) - Math.max(mExp - inc, 0);
+        mExp *= (1 + mInfl); mSS *= (1 + mInfl); mSpSS *= (1 + mInfl);
+        if (bal < 0) bal = 0;
+      }
+    }
+  }
+  renderChart('line', labels, [{ label: 'Portfolio balance', data, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.1)', fill: true, tension: 0.3, pointRadius: 3 }]);
+}
+
+function renderChart(type, labels, datasets) {
+  if (chartInst) chartInst.destroy();
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const gc = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const tc = isDark ? '#aaa' : '#888';
+  chartInst = new Chart(ctx, {
+    type, data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: tc, font: { size: 12 }, boxWidth: 12, padding: 16 } } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 11 }, maxTicksLimit: 8, autoSkip: true }, grid: { color: gc } },
+        y: { ticks: { color: tc, font: { size: 11 }, callback: fmtAxis }, grid: { color: gc }, stacked: type === 'bar' }
+      }
+    }
+  });
+}
+
+function showTab(name, btn) {
+  currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  calc();
+}
+
+function toggleEmailPanel() {
+  const p = document.getElementById('email-panel');
+  p.style.display = p.style.display === 'block' ? 'none' : 'block';
+  if (p.style.display === 'block') document.getElementById('email-input').focus();
+}
+
+function sendReport() {
+  const email = document.getElementById('email-input').value.trim();
+  const status = document.getElementById('email-status');
+  if (!email || !email.includes('@')) {
+    status.textContent = '올바른 이메일 주소를 입력해주세요.';
+    status.style.color = 'var(--red)';
+    return;
+  }
+  const r = lastResult;
+  const html = buildReportHTML(r, email);
+  const blob = new Blob([html], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'retirement_report.html'; a.click();
+  URL.revokeObjectURL(url);
+  status.textContent = '리포트가 다운로드됐습니다. 이메일 클라이언트에서 첨부해서 보내세요.';
+  status.style.color = 'var(--green)';
+}
+
+function buildReportHTML(r, email) {
+  const fmt = n => {
+    const abs = Math.abs(n);
+    if (abs >= 1000000) return '$' + (n / 1000000).toFixed(2) + 'M';
+    if (abs >= 1000) return '$' + Math.round(n / 1000) + 'K';
+    return '$' + Math.round(n).toLocaleString();
+  };
+  const onTrack = r.gap >= 0;
+  const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+  return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>은퇴 자금 계획 리포트</title></head>
+<body style="margin:0;padding:0;background:#f5f5f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f3;padding:32px 16px"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+<tr><td style="background:#1a1a18;border-radius:12px 12px 0 0;padding:32px 36px">
+  <p style="margin:0 0 6px;font-size:12px;color:#888;letter-spacing:0.08em;text-transform:uppercase">Retirement Planning Report</p>
+  <h1 style="margin:0;font-size:26px;font-weight:500;color:#fff">은퇴 자금 계획 리포트</h1>
+  <p style="margin:8px 0 0;font-size:13px;color:#aaa">${today} 기준</p>
+</td></tr>
+<tr><td style="background:${onTrack ? '#0F6E56' : '#993C1D'};padding:16px 36px">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td style="color:${onTrack ? '#E1F5EE' : '#FAECE7'};font-size:13px">목표 달성 여부</td>
+    <td align="right" style="color:${onTrack ? '#9FE1CB' : '#F0997B'};font-size:20px;font-weight:500">${onTrack ? '✓ 목표 초과 달성 예상' : '✗ 추가 저축 필요'}</td>
+  </tr><tr><td colspan="2" style="padding-top:4px;color:${onTrack ? '#5DCAA5' : '#F5C4B3'};font-size:12px">
+    ${onTrack ? `현재 계획대로라면 은퇴 시점에 목표 대비 ${fmt(r.gap)} 초과 적립됩니다.` : `목표 달성을 위해 월 $${Math.ceil(r.extra/50)*50} 추가 저축이 필요합니다.`}
+  </td></tr></table>
+</td></tr>
+<tr><td style="background:#fff;padding:28px 36px 8px">
+  <p style="margin:0 0 16px;font-size:13px;font-weight:500;color:#555;text-transform:uppercase;letter-spacing:0.06em">핵심 지표</p>
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td width="25%" style="padding-bottom:20px;vertical-align:top"><p style="margin:0 0 4px;font-size:11px;color:#888">필요 은퇴자금</p><p style="margin:0;font-size:22px;font-weight:500">${fmt(r.needFV)}</p></td>
+    <td width="25%" style="padding-bottom:20px;vertical-align:top"><p style="margin:0 0 4px;font-size:11px;color:#888">예상 적립액</p><p style="margin:0;font-size:22px;font-weight:500;color:#1D9E75">${fmt(r.willHave)}</p></td>
+    <td width="25%" style="padding-bottom:20px;vertical-align:top"><p style="margin:0 0 4px;font-size:11px;color:#888">자금 갭</p><p style="margin:0;font-size:22px;font-weight:500;color:${onTrack ? '#1D9E75' : '#E24B4A'}">${onTrack ? '+' : '-'}${fmt(Math.abs(r.gap))}</p></td>
+    <td width="25%" style="padding-bottom:20px;vertical-align:top"><p style="margin:0 0 4px;font-size:11px;color:#888">추가 필요 월 저축</p><p style="margin:0;font-size:22px;font-weight:500;color:${onTrack ? '#1D9E75' : '#BA7517'}">${r.extra > 0 ? '$' + Math.ceil(r.extra/50)*50 + '/mo' : '없음'}</p></td>
+  </tr></table>
+</td></tr>
+<tr><td style="background:#fff;padding:0 36px"><hr style="border:none;border-top:1px solid #f0ede8;margin:0"></td></tr>
+<tr><td style="background:#fff;padding:24px 36px 8px">
+  <p style="margin:0 0 16px;font-size:13px;font-weight:500;color:#555;text-transform:uppercase;letter-spacing:0.06em">기본 정보</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px">
+    <tr><td style="padding:7px 0;color:#888;width:40%">본인 현재 나이</td><td style="padding:7px 0;font-weight:500;text-align:right;width:10%">${r.age}세</td><td width="8%"></td><td style="padding:7px 0;color:#888;width:32%">배우자 현재 나이</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.spAge}세</td></tr>
+    <tr><td style="padding:7px 0;color:#888">은퇴 예정 나이</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.retire}세</td><td></td><td style="padding:7px 0;color:#888">배우자 기대 수명</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.spLife}세</td></tr>
+    <tr><td style="padding:7px 0;color:#888">본인 기대 수명</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.life}세</td><td></td><td style="padding:7px 0;color:#888">은퇴 기간 (부부)</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.retireYears}년</td></tr>
+  </table>
+</td></tr>
+<tr><td style="background:#fff;padding:0 36px"><hr style="border:none;border-top:1px solid #f0ede8;margin:0"></td></tr>
+<tr><td style="background:#fff;padding:24px 36px 8px">
+  <p style="margin:0 0 16px;font-size:13px;font-weight:500;color:#555;text-transform:uppercase;letter-spacing:0.06em">재정 현황</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px">
+    <tr><td style="padding:7px 0;color:#888">은퇴 후 월 생활비</td><td style="padding:7px 0;font-weight:500;text-align:right">$${r.expense.toLocaleString()}/mo</td></tr>
+    <tr><td style="padding:7px 0;color:#888">현재 저축/투자액</td><td style="padding:7px 0;font-weight:500;text-align:right">$${r.saved.toLocaleString()}</td></tr>
+    <tr><td style="padding:7px 0;color:#888">월 저축 가능액</td><td style="padding:7px 0;font-weight:500;text-align:right">$${r.monthly.toLocaleString()}/mo</td></tr>
+    <tr><td style="padding:7px 0;color:#888">연 투자 수익률</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.rate.toFixed(1)}%</td></tr>
+    <tr><td style="padding:7px 0;color:#888">연 물가 상승률</td><td style="padding:7px 0;font-weight:500;text-align:right">${r.infl.toFixed(1)}%</td></tr>
+  </table>
+</td></tr>
+<tr><td style="background:#fff;padding:0 36px"><hr style="border:none;border-top:1px solid #f0ede8;margin:0"></td></tr>
+<tr><td style="background:#fff;padding:24px 36px 28px">
+  <p style="margin:0 0 16px;font-size:13px;font-weight:500;color:#555;text-transform:uppercase;letter-spacing:0.06em">Social Security</p>
+  <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td width="48%" style="background:#f5f5f3;border-radius:8px;padding:16px">
+      <p style="margin:0 0 2px;font-size:11px;color:#888">본인</p>
+      <p style="margin:0 0 8px;font-size:20px;font-weight:500">$${Math.round(r.ssMonthly).toLocaleString()}/mo</p>
+      <p style="margin:0;font-size:12px;color:#888">신청 나이: ${r.ssage}세 · FRA 대비 ${r.ownPct >= 0 ? '+' : ''}${parseFloat(r.ownPct).toFixed(1)}%</p>
+    </td>
+    <td width="4%"></td>
+    <td width="48%" style="background:#f5f5f3;border-radius:8px;padding:16px">
+      <p style="margin:0 0 2px;font-size:11px;color:#888">배우자</p>
+      <p style="margin:0 0 8px;font-size:20px;font-weight:500">$${Math.round(r.spSsMonthly).toLocaleString()}/mo</p>
+      <p style="margin:0;font-size:12px;color:#888">신청 나이: ${r.spSsage}세 · FRA 대비 ${r.spPct >= 0 ? '+' : ''}${parseFloat(r.spPct).toFixed(1)}%</p>
+    </td>
+  </tr></table>
+</td></tr>
+<tr><td style="background:#2c2c2a;border-radius:0 0 12px 12px;padding:24px 36px">
+  <p style="margin:0 0 4px;font-size:12px;color:#888">본 리포트는 입력값 기반 추정치입니다. 실제 투자 수익률, 물가 변동, 세금 등에 따라 결과가 달라질 수 있습니다.</p>
+  <p style="margin:12px 0 0;font-size:11px;color:#555">Generated by Retirement Calculator · ${today}</p>
+</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+function bind(id, outId, fmt) {
+  document.getElementById(id).addEventListener('input', e => {
+    if (outId) document.getElementById(outId).textContent = fmt ? fmt(e.target.value) : e.target.value;
+    calc();
+  });
+}
+bind('age', 'age-v');
+bind('retire', 'retire-v');
+bind('ssage', 'ssage-v'); document.getElementById('ssage').addEventListener('input', e => updateBadge('ssage-badge', +e.target.value));
+bind('life', 'life-v');
+bind('sp-age', 'sp-age-v');
+bind('sp-ssage', 'sp-ssage-v'); document.getElementById('sp-ssage').addEventListener('input', e => updateBadge('sp-ssage-badge', +e.target.value));
+bind('sp-life', 'sp-life-v');
+bind('expense', 'expense-v', v => Number(v).toLocaleString());
+bind('saved', null); document.getElementById('saved').addEventListener('input', e => { document.getElementById('saved-disp').textContent = '$' + Number(e.target.value).toLocaleString(); calc(); });
+bind('monthly', 'monthly-v', v => Number(v).toLocaleString());
+bind('ss', 'ss-v', v => Number(v).toLocaleString());
+bind('sp-ss', 'sp-ss-v', v => Number(v).toLocaleString());
+bind('rate', 'rate-v', v => Number(v).toFixed(1));
+bind('infl', 'infl-v', v => Number(v).toFixed(1));
+
+calc();
+</script>
+</body>
+</html>
